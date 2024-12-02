@@ -9,6 +9,7 @@
 #include <string.h>
 #include <stdarg.h>
 #include <signal.h>
+#include <termios.h>
 
 #define REFRESH_DURATION 1
 #define BUFFER_SIZE 1024
@@ -34,6 +35,7 @@ const uint32_t VRAM_TEMP_WARN = 80;
 const uint32_t VRAM_TEMP_DANGER = 95;
 
 static volatile sig_atomic_t running = 1;
+static struct termios orig_termios;
 
 typedef struct {
     nvmlReturn_t result;
@@ -52,6 +54,14 @@ typedef struct {
     uint32_t vram_temp;
 } GpuDevice;
 
+static int check_root_privileges(void) {
+    if (geteuid() != 0) {
+        fprintf(stderr, "This program requires root privileges\n");
+        return -1;
+    }
+    return 0;
+}
+
 static void cleanup_context(Context *ctx) {
     if (!ctx) return;
 
@@ -66,14 +76,6 @@ static void cleanup_context(Context *ctx) {
     }
 }
 
-static int check_root_privileges(void) {
-    if (geteuid() != 0) {
-        fprintf(stderr, "This program requires root privileges\n");
-        return -1;
-    }
-    return 0;
-}
-
 static void signal_handler(int signum) {
     running = 0;
 }
@@ -81,6 +83,23 @@ static void signal_handler(int signum) {
 static void restore_cursor(void) {
     printf(CURSOR_SHOW);
     fflush(stdout);
+}
+
+static void reset_terminal(void) {
+    tcsetattr(STDIN_FILENO, TCSANOW, &orig_termios);
+}
+
+static int setup_terminal(void) {
+    struct termios new_termios;
+
+    if (tcgetattr(STDIN_FILENO, &orig_termios) < 0) return -1;
+    atexit(reset_terminal);
+    new_termios = orig_termios;
+    new_termios.c_lflag &= ~(ICANON | ECHO);
+    new_termios.c_cc[VMIN] = 0;
+    new_termios.c_cc[VTIME] = 0;
+    if (tcsetattr(STDIN_FILENO, TCSANOW, &new_termios) < 0) return -1;
+    return 0;
 }
 
 static void buffer_append(Context *ctx, const char *format, ...) {
@@ -273,28 +292,39 @@ static int init_monitoring(Context *ctx) {
     return 0;
 }
 
+static int handle_input(int duration_ms) {
+    struct timeval tv = {0, duration_ms * 1000};
+    fd_set fds;
+    FD_ZERO(&fds);
+    FD_SET(STDIN_FILENO, &fds);
+
+    if (select(STDIN_FILENO + 1, &fds, NULL, NULL, &tv) > 0) {
+        char c;
+        if (read(STDIN_FILENO, &c, 1) > 0) return 1;
+    }
+    return 0;
+}
+
+static int run_monitoring_loop(Context *ctx) {
+    while (running) {
+        if (monitor_temperatures(ctx) != 0) return -1;
+        if (handle_input(REFRESH_DURATION * 1000)) break;
+    }
+
+    printf("\033[%dB", ctx->device_count + 2);
+    printf("\n");
+    return 0;
+}
+
 int main(void) {
     Context ctx = {0};
 
-    if (init_monitoring(&ctx) < 0) {
+    if (init_monitoring(&ctx) < 0 || setup_terminal() < 0) {
         cleanup_context(&ctx);
         return 1;
     }
 
-    while (running) {
-        if (monitor_temperatures(&ctx) != 0) break;
-
-        struct timeval tv = {0, (int)(REFRESH_DURATION * 1000000)};
-        fd_set fds;
-        FD_ZERO(&fds);
-        FD_SET(STDIN_FILENO, &fds);
-
-        if (select(STDIN_FILENO + 1, &fds, NULL, NULL, &tv) > 0) {
-            if (getchar() == '\n') break;
-        }
-    }
-
-    printf("\033[%dB", ctx.device_count + 2);
+    int result = run_monitoring_loop(&ctx);
     cleanup_context(&ctx);
-    return 0;
+    return result == 0 ? 0 : 1;
 }
