@@ -40,7 +40,7 @@ If you get the error `nvml.h: No such file or directory`, try adding `-I/path/to
 sudo ./gputemps
 ```
 
-Tip: press `enter` or `CTRL+C` to exit
+Press any key or `CTRL+C` to exit
 
 <br>
 
