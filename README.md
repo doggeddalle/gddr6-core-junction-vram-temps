@@ -2,7 +2,7 @@
 
 <br>
 
-![output](https://github.com/user-attachments/assets/464f6c65-7328-4748-850c-778f8b6182f7)
+![image](https://github.com/user-attachments/assets/f92c9e98-07cc-4bc9-964d-ce616cfbc28c)
 
 <br>
 
