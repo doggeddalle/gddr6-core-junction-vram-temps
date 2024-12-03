@@ -10,6 +10,17 @@ Warning: This repo is experimental and may not work as intended. The code is pro
 
 <br>
 
+## Quickstart
+
+
+```
+curl -sO https://raw.githubusercontent.com/ThomasBaruzier/gddr6-core-junction-vram-temps/refs/heads/main/gputemps.c && gcc gputemps.c -o gputemps -O3 -lnvidia-ml -lpci -I"$CUDA_HOME/targets/x86_64-linux/include" && sudo ./gputemps
+```
+
+If this didn't work, you will have to continue reading
+
+<br>
+
 ## Dependencies
 
 - libpci-dev 
