@@ -12,12 +12,19 @@ Warning: This repo is experimental and may not work as intended. The code is pro
 
 ## Quickstart
 
+Assuming you have libpci and cuda, you can directly build and run the project like this:
 
 ```
 curl -sO https://raw.githubusercontent.com/ThomasBaruzier/gddr6-core-junction-vram-temps/refs/heads/main/gputemps.c && gcc gputemps.c -o gputemps -O3 -lnvidia-ml -lpci -I"$CUDA_HOME/targets/x86_64-linux/include" && sudo ./gputemps
 ```
 
-If this didn't work, you will have to continue reading
+If you don't have the dependencies, you can use Docker for the build (will download cuda):
+
+```
+git clone https://github.com/ThomasBaruzier/gddr6-core-junction-vram-temps && cd gddr6-core-junction-vram-temps && ./build-docker.sh && sudo ./gputemps
+```
+
+If this didn't work, please continue reading
 
 <br>
 
