@@ -1,7 +1,8 @@
 #!/bin/bash
 
+set -e
+
 cd "$(dirname "$0")"
-cp ../gputemps.c .
 
 docker build -t gputemps-builder .
 docker create --name temp-container gputemps-builder
