@@ -92,6 +92,7 @@ SecureBoot disabled
 ## Tested and working
 
 - RTX 3090 (GA102)
+- RTX 4060 Ti 16GB (AD106)
 - RTX 4060 Max-Q (AD107)
 
 <br>
